@@ -8,3 +8,5 @@ I've made no script changes, just made original scripts, however, any 3D models 
 I'm most proud of my 3D evolution during this final project, this is one of the biggest game, if not the biggest game I've ever made.
 There were a lot of challenges I encountered during this project such as lack of quality with jumpscare, coders block, and not knowing how to
 continue the game.
+As seen, my game, meets all basic requirements, if not exceeds them.
+(FOR MORE INFO, IN THE VIDEO, THE REASON I HAD TO LOAD THE WIN SCREEN WAS BECAUSE I KEPT LOSING, SORRY!!!)
