@@ -1,4 +1,3 @@
-// This is my "Closet Hider" script. For context, I have this habit of putting code that SHOULD be separated into different scripts into one script. So apologies for that!
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
@@ -6,70 +5,68 @@ using UnityEngine.SceneManagement;
 
 public class ClosetHider : MonoBehaviour
 {
-    // These variables are all essential for the game features.
-    string HidingSpotType = "None"; // Tracks where the player is hiding
+    // Keeps track of where I'm hiding right now
+    string HidingSpotType = "None";
 
-    public FirstPersonController firstPersonControllerScript; // Needed to freeze player movement
-    public float reenableDelay = 5f;
+    public FirstPersonController firstPersonControllerScript; // Used to stop the player from moving when hiding
+    public float reenableDelay = 5f; // How long till you can move again
 
-    // Audio settings
-    public AudioSource[] audioSources;
-    public AudioSource caughtSound;
+    // Sounds for stuff
+    public AudioSource[] audioSources; // Plays creepy sounds
+    public AudioSource caughtSound;    // Sound when you get caught (oops)
 
-    // Time + UI
-    public Text timeText;
-    public Text roundsText;
+    // Text stuff on screen
+    public Text timeText; // Shows the timer
+    public Text roundsText; // Shows how many rounds are left
 
-    // Flashlight flicker
+    // Flickering light for spooky vibes
     public Light flickerLight;
     public float minIntensity = 0.5f;
     public float maxIntensity = 2.0f;
     public float flickerSpeed = 0.05f;
 
-    // Camera settings
+    // Camera shake (like in horror movies)
     public Camera mainCamera;
     public float shakeAmplitude = 0.05f;
     public float shakeFrequency = 1.5f;
 
-    // Heartbeat effects
+    // Heartbeat effect on screen (makes it feel tense!)
     public RawImage heartbeatVignette;
     public float heartbeatFrequency = 1.5f;
     public float minHeartbeatAlpha = 0.2f;
     public float maxHeartbeatAlpha = 0.7f;
 
-    // Monster settings
+    // Monsters that chase you (yikes)
     public MonsterController[] monsters;
-    public float faceMonsterDuration = 3f;
+    public float faceMonsterDuration = 3f; // How long you stare at the monster if caught
 
-    // Flicker/visual stuff
+    // Stuff used to make the visual effects work
     private float flickerTimer;
     private float shakeTimer;
     private float heartbeatTimer;
 
-    // Timer and round stuff
+    // Timer and hiding round stuff
     public float targetTime = 60.0f;
     private List<string> activeHidingSpots = new List<string>();
     private bool timerTriggered = false;
 
     private int round = 0;
-    private const int maxRounds = 3;
+    private const int maxRounds = 3; // How many rounds before the game ends
 
-    private string chosenSpot = "";
-    public bool isIntermission = false;
+    private string chosenSpot = ""; // Random spot picked by the game
+    public bool isIntermission = false; // If the game is in between rounds
 
     private Vector3 originalCamPos;
-    private Quaternion originalCamRotation;
-    // Quaternion is a type of math used for rotation in 3D. Honestly, I'm in 8th grade so this stuff was a bit of a struggle for me, I just used what Unity docs/forums said.
+    private Quaternion originalCamRotation; // Don't ask, this rotation stuff is confusing
 
     private bool isFacingMonster = false;
     private float faceMonsterTimer = 0f;
 
     public Text currentHidingSpotText;
 
-    // Track usage of hiding spots
+    // Keeps track of which spots you used so you don't just hide in one over and over
     private Dictionary<string, int> hidingSpotUsage = new Dictionary<string, int>()
     {
-        // Tracks how often each spot is picked to reduce reuse
         { "Closet", 0 },
         { "Bathroom", 0 },
         { "Kitchen", 0 },
@@ -79,13 +76,15 @@ public class ClosetHider : MonoBehaviour
     void Start()
     {
         UpdateRoundsText();
+
+        // Save camera's starting position and rotation
         if (mainCamera != null)
         {
-            // To lock the camera position + rotation
             originalCamPos = mainCamera.transform.localPosition;
             originalCamRotation = mainCamera.transform.localRotation;
         }
 
+        // Start with no heartbeat effect showing
         if (heartbeatVignette != null)
         {
             Color c = heartbeatVignette.color;
@@ -99,6 +98,7 @@ public class ClosetHider : MonoBehaviour
         if (firstPersonControllerScript == null)
             return;
 
+        // If you enter a hiding spot, freeze movement and update the hiding type
         if (IsHidingSpot(other.tag))
         {
             if (!activeHidingSpots.Contains(other.tag))
@@ -112,6 +112,7 @@ public class ClosetHider : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        // When you leave a hiding spot, reset hiding info
         if (IsHidingSpot(other.tag))
         {
             activeHidingSpots.Remove(other.tag);
@@ -119,11 +120,13 @@ public class ClosetHider : MonoBehaviour
         }
     }
 
+    // Checks if a tag is a hiding spot
     private bool IsHidingSpot(string tag)
     {
         return tag == "Closet" || tag == "Bathroom" || tag == "Kitchen" || tag == "Bedroom";
     }
 
+    // Wait before letting the player move again
     private System.Collections.IEnumerator ReenableMovementAfterDelay()
     {
         yield return new WaitForSeconds(reenableDelay);
@@ -132,11 +135,13 @@ public class ClosetHider : MonoBehaviour
 
     void Update()
     {
+        // Show current hiding spot on screen
         if (currentHidingSpotText != null)
         {
             currentHidingSpotText.text = "Current Hiding Spot: " + HidingSpotType;
         }
 
+        // If you're caught, make you stare at the monster for a bit
         if (isFacingMonster)
         {
             faceMonsterTimer += Time.deltaTime;
@@ -153,6 +158,7 @@ public class ClosetHider : MonoBehaviour
             return;
         }
 
+        // While waiting (intermission), do all the scary effects
         if (isIntermission)
         {
             HandleLightFlicker();
@@ -161,6 +167,7 @@ public class ClosetHider : MonoBehaviour
         }
         else
         {
+            // If not intermission, reset visuals
             if (flickerLight != null)
                 flickerLight.intensity = maxIntensity;
 
@@ -175,6 +182,7 @@ public class ClosetHider : MonoBehaviour
             }
         }
 
+        // Handle timer countdown
         if (targetTime > 0.0f && !timerTriggered)
         {
             targetTime -= Time.deltaTime;
@@ -189,6 +197,7 @@ public class ClosetHider : MonoBehaviour
         }
     }
 
+    // Makes the flashlight flicker randomly
     private void HandleLightFlicker()
     {
         if (flickerLight != null)
@@ -202,6 +211,7 @@ public class ClosetHider : MonoBehaviour
         }
     }
 
+    // Makes the camera shake up and down
     private void HandleCameraShake()
     {
         if (mainCamera == null) return;
@@ -211,6 +221,7 @@ public class ClosetHider : MonoBehaviour
         mainCamera.transform.localPosition = originalCamPos + new Vector3(0, offsetY, 0);
     }
 
+    // Changes heartbeat effect to pulse faster/slower
     private void HandleHeartbeatVignette()
     {
         if (heartbeatVignette == null || !isIntermission) return;
@@ -224,17 +235,17 @@ public class ClosetHider : MonoBehaviour
         heartbeatVignette.color = c;
     }
 
+    // When the timer ends, figure out if you're safe or caught
     private System.Collections.IEnumerator HandleTimerEndSequence()
     {
-        Debug.Log($"Intermission started. Player hiding spot: {HidingSpotType}");
-
+        // If you didn't hide, too bad
         if (HidingSpotType == "None")
         {
             chosenSpot = "None";
         }
         else
         {
-            // Randomly pick spot, but less likely if it's been used a lot
+            // Pick a random spot, but less likely to reuse ones you've already picked
             float totalWeight = 0f;
             Dictionary<string, float> weights = new Dictionary<string, float>();
 
@@ -260,11 +271,10 @@ public class ClosetHider : MonoBehaviour
             }
         }
 
-        Debug.Log($"Chosen hiding spot is: {chosenSpot}");
-
         firstPersonControllerScript.playerCanMove = false;
         isIntermission = true;
 
+        // Play spooky sounds
         if (audioSources != null && audioSources.Length > 0)
         {
             foreach (var source in audioSources)
@@ -277,6 +287,7 @@ public class ClosetHider : MonoBehaviour
         yield return new WaitForSeconds(5f);
         isIntermission = false;
 
+        // If you picked the same spot as the monster, uh oh
         if (HidingSpotType == chosenSpot || HidingSpotType == "None")
         {
             if (caughtSound != null)
@@ -292,10 +303,11 @@ public class ClosetHider : MonoBehaviour
 
             if (round >= maxRounds)
             {
-                SceneManager.LoadScene(3);
+                SceneManager.LoadScene(3); // End game screen
             }
             else
             {
+                // Keep playing
                 firstPersonControllerScript.playerCanMove = true;
                 targetTime = 15.0f;
                 timerTriggered = false;
@@ -303,17 +315,20 @@ public class ClosetHider : MonoBehaviour
         }
     }
 
+    // Updates the round counter on the UI
     private void UpdateRoundsText()
     {
         if (roundsText != null)
             roundsText.text = "Rounds Remaining: " + (maxRounds - round).ToString();
     }
 
+    // So other scripts can know where you're hiding
     public string GetHidingSpotType()
     {
         return HidingSpotType;
     }
 
+    // Makes you look at the monster if you're caught
     private void FaceClosestMonsterForChosenRoom()
     {
         if (mainCamera == null || monsters == null) return;
@@ -348,7 +363,7 @@ public class ClosetHider : MonoBehaviour
 
             firstPersonControllerScript.enabled = false;
 
-            Invoke("LoadTitleScreen", 1.5f);
+            Invoke("LoadTitleScreen", 1.5f); // After scaring you, go back to menu
 
             Vector3 monsterHeadPos = closestMonster.transform.position + Vector3.up * 4f;
             Vector3 dir = (monsterHeadPos - mainCamera.transform.position).normalized;
@@ -356,12 +371,9 @@ public class ClosetHider : MonoBehaviour
             Quaternion lookRotation = Quaternion.LookRotation(dir);
             mainCamera.transform.rotation = Quaternion.Slerp(mainCamera.transform.rotation, lookRotation, Time.deltaTime * 3f);
         }
-        else
-        {
-            Debug.LogWarning("No monster found for chosenSpot: " + chosenSpot);
-        }
     }
 
+    // Loads the main menu again
     private void LoadTitleScreen()
     {
         SceneManager.LoadScene(0);
