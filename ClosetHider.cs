@@ -1,3 +1,4 @@
+//For context, I have this insanely bad habit of placing a lot of code that should be seperated into other scripts into one big script so apologies...
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
